@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.security.config.JwtTokenUtil;
-import com.security.model.AppUser;
+import com.security.dto.AppUserDTO;
 import com.security.model.JwtRequest;
 import com.security.model.JwtResponse;
 import com.security.repository.UserRepository;
@@ -77,7 +77,7 @@ public class AppController {
 	}
 
 	@RequestMapping(value = "/register", method = RequestMethod.POST)
-	public ResponseEntity<?> saveUser(@RequestBody AppUser user) throws Exception {
+	public ResponseEntity<?> saveUser(@RequestBody AppUserDTO user) throws Exception {
 		return ResponseEntity.ok(userDetailsService.save(user));
 	}
 	

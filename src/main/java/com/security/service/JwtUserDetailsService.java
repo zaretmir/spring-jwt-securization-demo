@@ -11,30 +11,39 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.security.builder.AppUserBuilder;
+import com.security.dao.AppUserDAO;
+import com.security.dto.AppUserDTO;
 import com.security.model.AppUser;
 import com.security.model.Role;
 import com.security.model.User_Role;
 import com.security.repository.RoleRepository;
-import com.security.repository.UserRepository;
 import com.security.repository.User_RoleRepository;
 
 @Service
 public class JwtUserDetailsService implements UserDetailsService {
 	
 	@Autowired
-	UserRepository userRepository;
+	AppUserDAO userDAO;
 	
 	@Autowired
 	RoleRepository roleRepo;
 	
 	@Autowired
 	User_RoleRepository urRepo;
+	
+	@Autowired
+	PasswordEncoder encoder;
+	
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		AppUser us = userRepository.findByUsername(username);
+		
+		AppUser us = userDAO.findByUsername(username);
 		
 		Collection<? extends GrantedAuthority> roles = getAuthorities(us);
 		
@@ -44,6 +53,7 @@ public class JwtUserDetailsService implements UserDetailsService {
 	}
 	
 	private Collection<? extends GrantedAuthority> getAuthorities(AppUser user) {
+		
 		Long userid = user.getId();
 		List<User_Role> userRoles = urRepo.findByUserpk(userid);
 		List<Long> rolesId = userRoles.stream().map( (ur) -> ur.getRolepk()).collect(Collectors.toList());
@@ -54,8 +64,18 @@ public class JwtUserDetailsService implements UserDetailsService {
 		return authorities;		
     }
 	
-	public AppUser save(AppUser user) {
-		return userRepository.save(user);
+	public AppUser save(AppUserDTO user) {
+		
+		AppUser newUser = AppUserBuilder.convertToEntity(user);
+		newUser.setPassword(encoder.encode(newUser.getPassword()));
+		AppUser savedUser = userDAO.save(newUser);
+		
+		// Assign ROLE_USER to new user
+		Long ROLE_USER_ID = roleRepo.findByRolename("USER").getId();
+		User_Role role = new User_Role(savedUser.getId(), ROLE_USER_ID);
+		urRepo.save(role);		
+		
+		return savedUser;
 	}
 	
 	
